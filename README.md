@@ -17,6 +17,19 @@
 天气：潮气偏重；微风
 ```
 
+## 验证
+
+本仓库的验证分四层，`python verify.py` 一条命令可跑前两层，`--full` 加第三层，`--privacy` 单独跑第四层：
+
+| 层 | 工具 | 验证什么 |
+|---|---|---|
+| 单元测试 | `tests/test_engine.py`、`tests/test_memory.py` | 历法换算、状态机行为、冲突并置、pinned 不可覆盖等具体行为 |
+| 向量卷对答案 | `tests/make_vectors.py` + `tests/test_vectors.json` | 确定性：固定起点 + 6/30/400/2000 小时的完整世界状态。**任何机器重新生成必须与仓库内版本逐字节一致**——这是跨语言/跨设备移植（如 ArkTS）的验收标准 |
+| 长周期 soak | `tests/test_longrun.py`（`--full`） | 连续推算 10 个现实年（87,600 小时）后状态不变量完好，且与一次跳算逐字节一致（任意时距无漂移）；zmemory 侧 5,000 条混合写入零丢失、零覆盖 |
+| 隐私终检 | `verify.py --privacy` | 全仓扫描作者信息/本机路径/疑似密钥，保证发布内容可公开 |
+
+CI（GitHub Actions）在 Python 3.10/3.11/3.12 上自动跑前两层和向量卷比对；soak 约 30 秒，发布前本地跑 `python verify.py --all`。
+
 ## 快速开始
 
 ```bash
