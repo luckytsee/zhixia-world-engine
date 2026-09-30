@@ -1,0 +1,6 @@
+# 核心测试所需（engine / gifts 不需要它们）
+numpy>=1.24
+pytest>=7.0
+
+# 可选：语义检索（不装则退回关键词+新近度检索）
+# sentence-transformers>=2.0

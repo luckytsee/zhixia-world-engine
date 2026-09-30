@@ -197,7 +197,7 @@ python -m companion_ui   # 一个会动的迷你面板：圆盘 + 气泡 + 按�
 
 | 模块 | 前提 |
 |---|---|
-| `memory/` | 依赖 **numpy**；语义检索默认走 sentence-transformers（自带测试用 MockEmbedder，所以离线也能全绿）。不装 embedding 时按关键词+新近度检索，不崩 |
+| `memory/` | 依赖 **numpy**（`requirements.txt` 已列）；语义检索默认走 sentence-transformers（自带测试用 MockEmbedder，所以离线也能全绿）。不装 embedding 时按关键词+新近度检索，不崩 |
 | `memory_writer.py` | **代码行为可复现，判断质量不可复现**——"气话不进事实""冲突不覆盖"都是提示词纪律，换个模型可能失效。它是一条 LLM 管道 |
 | `affect.py` | 数值部分是确定算术；"该不该不高兴"那层同样是提示词 |
 | `gifts/` | 账本与流转是确定的；真实裁决需要 LLM（图片礼物还要 vision） |
