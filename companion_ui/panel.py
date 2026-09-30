@@ -101,7 +101,9 @@ class EmotionPanel:
         self.canvas.delete("all")
         path = self.images.get(emotion) or self.images.get("neutral")
         if path and Path(path).is_file():
-            img = self._PIL.Image.open(path)
+            # ⚠️ self._PIL 就是 Image 模块本身（见 __init__），写 self._PIL.Image.open
+            # 会去找 PIL.Image.Image 这个 class（它没有 open）→ AttributeError。
+            img = self._PIL.open(path)
             img = img.resize((self.w, self.h))
             self._photo = self._ImageTk.PhotoImage(img)
             self.canvas.create_image(0, 0, image=self._photo, anchor="nw")

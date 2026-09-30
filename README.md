@@ -114,6 +114,7 @@ memory_writer.py       对话提取管道（认知比对 / 红线 / 礼物候选
 tests/
   test_engine.py        引擎测试 12 项
   test_decision_layer.py 决策层测试（删除通道 / 外观过滤 / 冲突并置 / 气话红线）4 项
+  test_panel_gui.py     面板图像路径测试（真实加载立绘 / 兜底 / 缩放重贴）3 项
   test_gifts.py         礼物系统测试 8 项
   test_longrun.py       长周期 soak（10 年重放 + 5000 条写入，约 30 秒）
 verify.py              一键验证入口（快速/完整/隐私三档）
