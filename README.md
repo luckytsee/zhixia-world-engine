@@ -117,6 +117,19 @@ demo.py                 演示脚本
 .github/workflows/      CI：3.10 / 3.11 / 3.12 自动跑测试
 ```
 
+## assets/example：示例立绘
+
+一套可直接使用的桌面伴侣立绘（知夏形象，作者授权随仓库分发）：
+
+| 文件 | 用途 |
+|---|---|
+| `happy.png` / `angry.png` / `neutral.png` | 情绪立绘（2048×2048 RGBA），按情绪标签映射显示 |
+| `character.png` | 512×512 占位头像 |
+| `zhixia.ico` | 应用图标 |
+
+接入约定：上层程序解析 AI 回复中的情绪标签（happy/angry/neutral/…），按标签切换立绘；
+未识别的情绪回退 `neutral.png`。把 `assets/example/` 里的文件配进你的桌面程序即可开箱使用。
+
 ## License
 
 MIT
