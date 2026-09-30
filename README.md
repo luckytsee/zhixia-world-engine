@@ -49,7 +49,7 @@ CI（GitHub Actions）在 Python 3.10/3.11/3.12 上自动跑前两层和向量�
 git clone https://github.com/luckytsee/zhixia-world-engine.git
 cd zhixia-world-engine
 python demo.py                # 把世界推算到现在，打印当前世界状态
-python tests/test_engine.py   # 引擎测试 11 项
+python tests/test_engine.py   # 引擎测试 12 项
 python tests/test_memory.py   # 记忆库测试 10 项
 ```
 
@@ -105,8 +105,11 @@ zmemory/
   store.py              CompanionMemory：四层记忆库
   reconcile.py          Judge：认知比对（LLM 可插拔 / 文本匹配兜底）
 tests/
-  test_engine.py        引擎测试 11 项
+  test_engine.py        引擎测试 12 项
   test_memory.py        记忆库测试 10 项
+  test_gifts.py         礼物系统测试 8 项
+  test_longrun.py       长周期 soak（10 年重放 + 5000 条写入，约 30 秒）
+verify.py              一键验证入口（快速/完整/隐私三档）
   make_vectors.py       重新生成 test_vectors.json
   test_vectors.json     固定时刻的标准答案（跨端验收用）
 docs/01_世界引擎规格.md   架构与多端接入说明

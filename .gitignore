@@ -14,3 +14,6 @@ venv/
 *.db-shm
 .DS_Store
 state/world_state.json
+state/gifts*.json
+state/gifts_pending.json
+state/gifts/
