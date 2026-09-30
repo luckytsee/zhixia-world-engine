@@ -109,7 +109,7 @@ class SQLiteMemoryStore:  # 实现 MemoryStore 协议
 至少覆盖（每条对应 06 文档验收标准）：
 
 1. 写入/读取 round-trip：episode 字段无丢失
-2. 混合检索排序：高相关 > 低相关；关键词精确命中把正确条目顶上来（"小明"场景）
+2. 混合检索排序：高相关 > 低相关；关键词精确命中把正确条目顶上来（人名/专名场景）
 3. **衰减**：造 90 天前的低 importance 条目 → apply_decay 后 archived；高 importance（0.9）90 天前的**仍在**；pinned 永不 archived
 4. 容量淘汰：塞 max_episodes+50 条 → 淘汰后 ≤ max_episodes，pinned 保留
 5. 事实状态机：低 confidence → tentative 且 relevant_facts 默认不返回；upsert 同 key 覆盖合并 evidence；refute 后永不返回但 fact_evidence 仍可追溯
