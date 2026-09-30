@@ -6,7 +6,7 @@
 - zmemory：5,000 条混合 claim（new/confirm/conflict 各占其一），
   校验旧值零丢失、计数精确、pinned 不可动。
 
-运行（仓库根目录）：python tests/test_longrun.py（约 10 秒）
+运行（仓库根目录）：python tests/test_longrun.py（全程约 6-7 分钟，发布前手动跑；CI 只跑 test_engine + test_memory，避免私有仓库吃 Actions 配额）
 """
 from __future__ import annotations
 
@@ -84,7 +84,8 @@ class TestMemorySoak(unittest.TestCase):
         self.assertEqual(len(tide_keys), n_conflict)
         self.assertEqual(facts["潮汐记录"], "第2次观测")            # 基准条目未被任何后续冲突覆盖
         self.assertEqual(facts["事实1"], "值1-补充")               # confirm 正常更新
-        self.assertEqual(len(facts), 1 + n_new + n_conflict)
+        # 总账：锚点 + new 键 + confirm 键（首次即独立成键）+ 潮汐并置族
+        self.assertEqual(len(facts), 1 + n_new + n_conf + n_conflict)
 
 
 if __name__ == "__main__":
