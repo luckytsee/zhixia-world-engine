@@ -43,13 +43,19 @@ class TestCalendar(unittest.TestCase):
         self.assertTrue(len(st["history"]) > 0)
 
     def test_epoch_from_rules(self):
-        """纪元＝2008-09-29（他的 18 周岁）；18 现实年 ≈ 她的 12.15 年 → 第 13 年、萌芽期。"""
+        """纪元取自 rules.json（可自定义）；推演 N 现实年后落在第几年由历法决定。
+
+        ⚠️ 这里**不写死具体日期**——纪元是使用者的私有选择，改它会改变整个走向。
+        """
         e = fresh_engine()
+        start = e.r["start_epoch"]
         st = e.initial_state()  # 不传参 → 用 rules.json 的 start_epoch
-        self.assertEqual(st["hour_abs"], 1222617600 // 3600)
-        e.advance_to(st, 1222617600 + 18 * 365 * 24 * 3600)
-        self.assertEqual(e.year_of(st["tide_index"]), 13)
-        self.assertEqual(e.month_of(st["tide_index"])["season"], "萌芽期")
+        self.assertEqual(st["hour_abs"], int(start // 3600))
+        # 潮长是逐个采样的（均值只是统计量），所以用"推进后确实走了很多潮"来断言
+        mean_tide_h = sum(s["mean_h"] for s in e.r["stages"])
+        e.advance_to(st, start + 360 * mean_tide_h * 3600)
+        self.assertGreater(st["tide_index"], 300)          # 走了约 360 潮
+        self.assertGreaterEqual(e.year_of(st["tide_index"]), 1)
 
     def test_load_or_init_state(self):
         """账本入口：首次初始化→落盘；再读→补算衔接（不重置世界）。"""
@@ -57,9 +63,10 @@ class TestCalendar(unittest.TestCase):
         e = fresh_engine()
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "world_state.json")
-            a = load_or_init_state(e, path=p, now=1222617600 + 100 * 3600)
+            base = e.r["start_epoch"]
+            a = load_or_init_state(e, path=p, now=base + 100 * 3600)
             tide_a = a["tide_index"]
-            b = load_or_init_state(e, path=p, now=1222617600 + 200 * 3600)
+            b = load_or_init_state(e, path=p, now=base + 200 * 3600)
             self.assertGreater(b["tide_index"], tide_a)  # 世界继续走，没有重置
             self.assertTrue(os.path.exists(p))
 

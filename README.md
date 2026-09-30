@@ -1,7 +1,7 @@
 # Zhixia World Engine
 
 一个长期运行的 AI 伴侣的**记忆与关系系统**（决策层），外加配套的确定性世界引擎、礼物交换和
-桌面 UI 组件。纯 Python 标准库，零第三方依赖，Python 3.10+。
+桌面 UI 组件。Python 3.10+；`engine`/`gifts` 零第三方依赖，`memory` 需要 numpy（可选 sentence-transformers，用于语义检索）
 
 ## 先说什么最值得看：决策层
 
@@ -50,7 +50,7 @@
 | 长周期 soak | `tests/test_longrun.py`（`--full`） | 连续推算 10 个现实年（87,600 小时）后状态不变量完好，且与一次跳算逐字节一致（任意时距无漂移）；记忆层 5,000 条混合写入零丢失、零覆盖 |
 | 隐私终检 | `verify.py --privacy` | 全仓扫描作者信息/本机路径/疑似密钥，保证发布内容可公开 |
 
-CI（GitHub Actions）在 Python 3.10/3.11/3.12 上自动跑前两层和向量卷比对；soak 约 30 秒，发布前本地跑 `python verify.py --all`。
+CI（GitHub Actions）在 Python 3.10/3.11/3.12 上自动跑前两层和向量卷比对；soak 视机器约 30–60 秒，发布前本地跑 `python verify.py --all`。
 
 ## gifts：异步双向礼物系统（寄快递式）
 
@@ -139,7 +139,7 @@ tests/
   test_decision_layer.py 决策层测试（删除通道 / 外观过滤 / 冲突并置 / 气话红线）4 项
   test_panel_gui.py     面板图像路径测试（真实加载立绘 / 兜底 / 缩放重贴）3 项
   test_gifts.py         礼物系统测试 8 项
-  test_longrun.py       长周期 soak（10 年重放 + 5000 条写入，约 30 秒）
+  test_longrun.py       长周期 soak（10 年重放 + 5000 条写入，约 30–60 秒）
 verify.py              一键验证入口（快速/完整/隐私三档）
   make_vectors.py       重新生成 test_vectors.json
   test_vectors.json     固定时刻的标准答案（跨端验收用）
@@ -187,6 +187,31 @@ python -m companion_ui   # 一个会动的迷你面板：圆盘 + 气泡 + 按�
 
 接入约定：上层程序解析 AI 回复中的情绪标签（happy/angry/neutral/…），按标签切换立绘；
 未识别的情绪回退 `neutral.png`。把 `assets/example/` 里的文件配进你的桌面程序即可开箱使用。
+
+## 前提与边界（搬走之前先看这一节）
+
+**能复现的**：世界推进（确定性可重放）、跨语言对答案（向量卷）、记忆存储与检索
+（SQLite，可全离线）、衰减/淘汰/冲突并置（纯算法）、礼物账本（JSON，`--mock` 可跑）。
+
+**有隐含前提的**：
+
+| 模块 | 前提 |
+|---|---|
+| `memory/` | 依赖 **numpy**；语义检索默认走 sentence-transformers（自带测试用 MockEmbedder，所以离线也能全绿）。不装 embedding 时按关键词+新近度检索，不崩 |
+| `memory_writer.py` | **代码行为可复现，判断质量不可复现**——"气话不进事实""冲突不覆盖"都是提示词纪律，换个模型可能失效。它是一条 LLM 管道 |
+| `affect.py` | 数值部分是确定算术；"该不该不高兴"那层同样是提示词 |
+| `gifts/` | 账本与流转是确定的；真实裁决需要 LLM（图片礼物还要 vision） |
+| `companion_ui/` | 需要 tkinter 与图形环境；无头环境跑不了（GUI 测试会自动跳过） |
+| `companion_ui/perception.py` | 人脸闸门需要 YuNet / SFace 两个 onnx（opencv_zoo 公开模型）+ 基准照，**全部由调用方自备**——代码可读，不配齐跑不了 |
+
+**不复现的**（不是缺陷，是边界）：
+
+- **时间线**：`rules.json` 的 `start_epoch` 是示例值，**请改成你自己的日期**；
+  改它会改变此后每一刻的世界状态（推演是确定性的，起点变了走向全变）；
+- **外部文档**：设计规格见 `docs/02_记忆系统设计.md` 与 `docs/03_世界笔记规格.md`（已随仓库）；
+  设定稿的 Excel 版未发布，`rules.json` + `world_rules.md` 是等价的可读版；
+- **手机端实现**：ArkTS 移植不在本仓库；`tests/test_vectors.json` 是为它准备的跨端验收标准；
+- **人格与语音**：伴侣的人格文本、语音链路属于各自项目的私有部分，不在本仓库。
 
 ## License
 

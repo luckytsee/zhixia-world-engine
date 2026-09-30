@@ -3,7 +3,7 @@
 
 用法：
   python verify.py              # 快速档：单元测试 + 向量卷一致性（约 5 秒）
-  python verify.py --full      # 完整档：再加 10 年 soak（约 30 秒，发布前跑）
+  python verify.py --full      # 完整档：再加 10 年 soak（约 30–60 秒，发布前跑）
   python verify.py --privacy   # 隐私终检：全仓 grep 生活数据关键词（推远端前必跑）
   python verify.py --all       # 以上全部
 
