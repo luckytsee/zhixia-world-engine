@@ -28,7 +28,8 @@ PRIVACY_PATTERNS = [
     r"ghp_[A-Za-z0-9]+",             # GitHub token
 ]
 
-PRIVACY_ALLOW = ("LICENSE",)        # 署名文件豁免
+PRIVACY_ALLOW_FILES = ("LICENSE", "verify.py")   # 署名文件 + 扫描器自身（含探测模式）
+PRIVACY_ALLOW_LINE = re.compile(r"github\.com/luckytsee/")   # 公开仓库地址属公开身份
 
 
 def run(desc: str, cmd: list[str]) -> bool:
@@ -49,12 +50,16 @@ def privacy_check() -> bool:
         for name in filenames:
             p = Path(dirpath) / name
             rel = p.relative_to(ROOT).as_posix()
-            if any(rel.startswith(a) for a in PRIVACY_ALLOW):
+            if rel.startswith(PRIVACY_ALLOW_FILES):
                 continue
             if not re.search(r"\.(py|md|json|yml|txt|gitignore)$|^\.gitignore$", name):
                 continue
             try:
-                for i, line in enumerate(p.read_text(encoding="utf-8"), 1):
+                # ⚠️ 必须 .splitlines()：enumerate 直接迭代字符串得到的是单个字符，
+                # 单字符永远匹配不到多字符模式——第一版栽在这里，假绿了半天
+                for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+                    if PRIVACY_ALLOW_LINE.search(line):
+                        continue
                     if pat.search(line):
                         bad.append(f"{rel}:{i}: {line.strip()[:80]}")
             except (UnicodeDecodeError, OSError):
