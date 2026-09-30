@@ -1,0 +1,7 @@
+{
+  "string": [
+    { "name": "module_desc", "value": "World engine phone port" },
+    { "name": "EntryAbility_desc", "value": "entry" },
+    { "name": "EntryAbility_label", "value": "WorldEngine" }
+  ]
+}

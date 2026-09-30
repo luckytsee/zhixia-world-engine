@@ -188,6 +188,22 @@ python -m companion_ui   # 一个会动的迷你面板：圆盘 + 气泡 + 按�
 接入约定：上层程序解析 AI 回复中的情绪标签（happy/angry/neutral/…），按标签切换立绘；
 未识别的情绪回退 `neutral.png`。把 `assets/example/` 里的文件配进你的桌面程序即可开箱使用。
 
+## phone/：鸿蒙（HarmonyOS / ArkTS）移植件
+
+`phone/` 是把世界引擎搬到**鸿蒙手机**上的 ArkTS 实现，外加一套**唤醒式主动发起**
+（系统唤醒 → 本地补算世界 → 本地判断由头 → 有才调 LLM → 发本地通知，全程无服务器）。
+
+⚠️ **这是鸿蒙原生工程**（`.ets` / `hvigorfile.ts` / DevEco Studio 构建），
+不是 Node/TypeScript 项目，**用普通 TS 工具链构建不了**。仓库其余部分是 Python。
+
+它与本仓库通过**两份生成物**保持一致（必须同步，否则两端算出的世界不一致）：
+
+- `phone/.../WeWorldDefaultRules.ets` ← 由 `rules.json` 生成
+- `phone/.../WeWorldVectors.ets` ← 由 `tests/test_vectors.json` 生成（4 组验收向量）
+
+即：**Python 与 ArkTS 必须对同一组向量给出逐字段相同的答案**——这是跨端一致性的验收标准，
+也是 `tests/test_vectors.json` 存在的理由。详见 `phone/README.md`。
+
 ## 前提与边界（搬走之前先看这一节）
 
 **能复现的**：世界推进（确定性可重放）、跨语言对答案（向量卷）、记忆存储与检索

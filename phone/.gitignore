@@ -1,0 +1,14 @@
+# 构建产物
+/build/
+/entry/build/
+/.hvigor/
+/.idea/
+/oh_modules/
+/entry/oh_modules/
+*.hap
+*.hsp
+local.properties
+/.cxx/
+/.clangd
+/.clang-format
+/.clang-tidy
