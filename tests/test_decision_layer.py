@@ -17,6 +17,7 @@ from world_notes import WorldNotesStore, looks_like_appearance  # noqa: E402
 from memory import SQLiteMemoryStore  # noqa: E402
 from memory_writer import MemoryWriter  # noqa: E402
 from gifts import GiftStore  # noqa: E402
+from memory_writer import _fact_has_time_hint  # noqa: E402
 
 
 def make_world_notes(tmp: str) -> WorldNotesStore:
@@ -98,6 +99,53 @@ class TestWriter(unittest.TestCase):
         pool = gifts.pending()
         self.assertEqual(len(pool), 1)
         self.assertEqual(pool[0]["name"], "溪边的石头")
+
+
+class TestConflictTrigger(unittest.TestCase):
+    """2026-10-01 修复：并置不再依赖 action 字段（外部实测暴露的漏口）。"""
+
+    def _run(self, reconciliation: dict):
+        tmp = tempfile.mkdtemp()
+        store = SQLiteMemoryStore(os.path.join(tmp, "m.db"))
+        wn = WorldNotesStore(os.path.join(tmp, "w.db"))
+        writer = MemoryWriter(llm=None, store=store, log=lambda *_: None, world_notes=wn)
+        store.upsert_fact(key="喜欢的主食", value="不太喜欢吃面",
+                          confidence=0.9, evidence=[])
+        writer.llm = type("L", (), {"chat": lambda s, m: json.dumps({
+            "episode": {"summary": "聊到吃饭", "importance": 0.2},
+            "facts": [{"key": "喜欢的主食", "value": "挺喜欢吃面", "confidence": 0.9}],
+            "reconciliations": [reconciliation]}, ensure_ascii=False)})()
+        writer.write_session([{"role": "user", "content": "我挺喜欢吃面的。"}])
+        return {f.key: f.value for f in store.list_facts()}
+
+    def test_conflict_without_action_still_coexists(self):
+        """判了 conflict 但没填 action → 仍必须并置（原来会漏、旧值被覆盖）。"""
+        got = self._run({"relation": "conflict", "target": "user_fact"})
+        self.assertEqual(got["喜欢的主食"], "不太喜欢吃面")
+        self.assertEqual(got["喜欢的主食（后来）"], "挺喜欢吃面")
+
+    def test_conflict_with_rewritten_information_still_coexists(self):
+        """new_information 是改写而非原文 → 仍必须并置。"""
+        got = self._run({"relation": "conflict", "target": "user_fact",
+                         "new_information": "喜欢吃面食"})
+        self.assertIn("喜欢的主食（后来）", got)
+
+    def test_confirm_still_updates_normally(self):
+        """非冲突仍走正常更新（别把并置用过头）。"""
+        got = self._run({"relation": "confirm", "target": "user_fact"})
+        self.assertEqual(got["喜欢的主食"], "挺喜欢吃面")
+        self.assertNotIn("喜欢的主食（后来）", got)
+
+
+class TestFactTimeHint(unittest.TestCase):
+    """事实层时间词：只标注不改写。"""
+
+    def test_detects_time_words(self):
+        self.assertTrue(_fact_has_time_hint("下午的会开了两个半小时（两点到四点半）"))
+        self.assertTrue(_fact_has_time_hint("昨天买了个键盘"))
+        self.assertTrue(_fact_has_time_hint("他平时晚上十点打游戏"))   # 提示，但不改写
+        self.assertFalse(_fact_has_time_hint("他喜欢喝咖啡"))
+        self.assertFalse(_fact_has_time_hint("开了两个半小时的会"))     # 时长不是时间点
 
 
 if __name__ == "__main__":

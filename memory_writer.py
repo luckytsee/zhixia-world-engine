@@ -34,6 +34,10 @@ _EXTRACTION_PROMPT = """你的任务：从一段"用户与桌面AI伴侣的对�
   "原本计划""后来""接下来"这类不含绝对时间的说法（同上：提取时已经过了半小时）
 - importance：日常闲聊 0.1-0.3；涉及用户生活、习惯、人际关系、情绪 0.4-0.7；重大事件 0.8-1.0
 - facts 只记关于用户的稳定信息（喜好、习惯、计划、人际关系），一次性闲聊不记；没有就输出空数组
+- ⚠️⚠️ facts 的 value **同样禁止钟点与相对日期**（"今天下午两点""昨天""刚才"）——
+  facts 是**长期记忆**，会一直注入；写进去的时间会永久留在她认知里，明天再被当成"最近发生"。
+  时间永远由系统的记录时间戳承担，**不需要也不允许你写**。要记时长就写时长（"开了两个半小时"）。
+  真机事故参考：摘要里写错钟点 → 她照着复述 → 用户质疑"记忆错乱"。
 - confidence：用户亲口直说的 0.9；推测的 0.5-0.7
 - 与已存在事实含义相同时，必须复用已存在的键名（更新它），不要造近义新键
 - ⚠️⚠️ **下面这些是"你已经知道的"（键名 + 值都要用上）**：
@@ -210,6 +214,9 @@ class MemoryWriter:
                 value = str(fact.get("value", "")).strip()
                 if not key or not value:
                     continue
+                # ⚠️ 事实层时间词：只提醒不改写（见 _fact_has_time_hint 的说明）
+                if _fact_has_time_hint(value):
+                    self.log(f"[记忆] ⚠️ 这条事实含时间表述，可能过期：{key} = {value}")
                 confidence = _clamp(_to_float(fact.get("confidence"), 0.9), 0.0, 1.0)
                 old = existing_facts.get(key)
                 if (old is not None and old.status == "confirmed"
@@ -221,11 +228,17 @@ class MemoryWriter:
                 # 用户口径："conflict 不等于谁错了"（"通常12点睡"和"昨天3点睡"可以同时成立），
                 # "她以前怎么认识你，本身也是你们相处历史的一部分"。
                 # ⚠️ 现在只做 `keep_both`：**旧的照旧、新的另存一条**（键名加后缀区分）。
+                #
+                # ⚠️⚠️ 2026-10-01 收口（外部实测暴露：判了 conflict 却仍被覆盖）：
+                # 原判定要求 `action` **精确等于** "keep_both" **且** `new_information`
+                # 是 value 的原文子串——模型少填 action、或把新信息改写成同义说法，
+                # 并置就整个失效、旧值被 upsert 直接覆盖。
+                # 现在放宽为：**只要某条比对判的是 user_fact + conflict 就必须并置**。
+                # action 不再是门槛（模型常不填；且"这一条不用管"也不该让历史消失）；
+                # new_information 只用于留痕，不参与判定。
                 is_conflict = any(
-                    str(rc.get("target", "")).startswith("user_fact")
-                    and str(rc.get("action", "")) == "keep_both"
-                    and str(rc.get("new_information", "")).strip()
-                    and str(rc.get("new_information", "")).strip() in value
+                    str(rc.get("relation", "")) == "conflict"
+                    and str(rc.get("target", "")).startswith("user_fact")
                     for rc in reconciliations
                 )
                 if is_conflict and old is not None:
@@ -368,6 +381,21 @@ def _to_float(value: object, default: float) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+# ⚠️ 事实层时间词（2026-10-01）。**只标注、不改写**：
+# 试过用正则剥除，实测会把正当内容弄坏（"平时晚上十点打游戏"是长期作息，
+# 剥完成"他平时"；"下午两点到四点半"留下"到四点半）"这种残渣）。
+# ⇒ 内容清洗交给提示词（已补 facts 时间词禁令），代码侧只做**检测与留痕**，
+#   让"她又记了时间"这件事在日志里可见、可修——不静默改写她的记忆。
+_TIME_HINT_RE = re.compile(
+    r"(今天|昨天|前天|明天|后天|刚才|刚刚|凌晨|早上|上午|中午|下午|傍晚)"
+    r"|([0-9０-９一二三四五六七八九十]{1,2}\s*[点時时]\s*[0-9０-９一二三四五六七八九十]{0,2}\s*分?)")
+
+
+def _fact_has_time_hint(value: str) -> bool:
+    """事实里是否含钟点/相对日期（仅用于提醒，不做修改）。"""
+    return bool(value and _TIME_HINT_RE.search(value))
 
 
 def _clamp(value: float, low: float, high: float) -> float:
