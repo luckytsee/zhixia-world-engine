@@ -23,7 +23,8 @@ ROOT = Path(__file__).resolve().parent
 PRIVACY_PATTERNS = [
     r"luckytsee",
     r"D:\\\\",
-    r"桌面",
+    # 注：不再单列"桌面"——公开的桌面伴侣项目里"桌面"是正当技术词，
+    # 本机路径由 D:\\ 模式负责抓取
     r"sk-[A-Za-z0-9]{10,}",          # 任何疑似 API key
     r"ghp_[A-Za-z0-9]+",             # GitHub token
 ]
