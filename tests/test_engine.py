@@ -127,7 +127,7 @@ class TestRender(unittest.TestCase):
         for key in ("时节", "当前", "光线", "林中状态", "天气"):
             self.assertIn(key, out["fields"])
         self.assertTrue(out["block"].startswith("【她那边此刻】"))
-        # 只给状态不给台词：字段里不许出现引号包裹的固定口语
+        # 渲染字段中不应出现预设的固定话术
         for v in out["fields"].values():
             self.assertNotIn("「", v)
 
