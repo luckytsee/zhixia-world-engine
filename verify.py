@@ -89,7 +89,10 @@ def main() -> None:
 
     results: list[tuple[str, bool]] = []
     results.append(("单元测试：engine", run("引擎单元测试", ["tests/test_engine.py"])))
-    results.append(("单元测试：zmemory", run("记忆库单元测试", ["tests/test_memory.py"])))
+    results.append(("决策层 + 组件单元测试",
+                    run("决策层/组件测试", ["-m", "pytest", "tests/", "-q"])))
+    results.append(("记忆库自带测试",
+                    run("记忆库测试", ["-m", "pytest", "memory/tests/", "-q"])))
 
     # 向量卷一致性：重新生成后与仓库内版本比对。
     # 换行不敏感比较（\r\n 归一为 \n）——git 的 autocrlf 可能让工作区行尾与

@@ -19,7 +19,7 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine import WorldEngine, load_rules  # noqa: E402
-from zmemory import CompanionMemory  # noqa: E402
+from memory import SQLiteMemoryStore  # noqa: E402
 
 TEN_YEARS_H = 10 * 365 * 24  # 87,600 小时（10 个现实年）
 
@@ -57,35 +57,28 @@ class TestEngineSoak(unittest.TestCase):
         self.assertEqual(c, d)
 
 
+
+
 class TestMemorySoak(unittest.TestCase):
-    def test_5000_claims_no_loss(self):
+    def test_5000_facts_no_loss_and_pin_flag(self):
+        """5,000 条事实写入零丢失；钉死标记正确落库。
+
+        ⚠️ 层面说明（与真实设计对齐）：`pin` 的**保护**发生在写入管道层
+        （memory_writer 覆盖前检查 `pinned`），`upsert_fact` 本身照写。
+        store 层保证的是"不丢数据"，不是"拒绝覆盖"。"""
         tmp = tempfile.mkdtemp()
-        m = CompanionMemory(os.path.join(tmp, "soak.db"), log=lambda *_: None)
-        m.record_claim("锚点", "原始值", "new")
-        m.pin_fact("锚点")
+        store = SQLiteMemoryStore(os.path.join(tmp, "soak.db"))
+        store.upsert_fact(key="生日", value="4月5日", confidence=0.95, evidence=[])
+        store.pin_fact("生日")
 
-        n_new = n_conf = n_conflict = 0
         for i in range(5000):
-            if i % 3 == 0:
-                m.record_claim(f"事实{i}", f"值{i}", "new")
-                n_new += 1
-            elif i % 3 == 1:
-                m.record_claim(f"事实{i}", f"值{i}-补充", "confirm")
-                n_conf += 1
-            else:
-                m.record_claim("潮汐记录", f"第{i}次观测", "conflict")
-                n_conflict += 1
+            store.upsert_fact(key=f"事实{i}", value=f"值{i}",
+                              confidence=0.9, evidence=[])
 
-        facts = {f["key"]: f["value"] for f in m.all_facts()}
-        # 原始值零丢失
-        self.assertEqual(facts["锚点"], "原始值")
-        # 首条 conflict 因无旧知按 new 落为正键，其后每次冲突各自并置：1 + (n-1) = n 条
-        tide_keys = [k for k in facts if k.startswith("潮汐记录")]
-        self.assertEqual(len(tide_keys), n_conflict)
-        self.assertEqual(facts["潮汐记录"], "第2次观测")            # 基准条目未被任何后续冲突覆盖
-        self.assertEqual(facts["事实1"], "值1-补充")               # confirm 正常更新
-        # 总账：锚点 + new 键 + confirm 键（首次即独立成键）+ 潮汐并置族
-        self.assertEqual(len(facts), 1 + n_new + n_conf + n_conflict)
+        facts = {f.key: f for f in store.list_facts()}
+        self.assertEqual(len(facts), 5001)                    # 零丢失
+        self.assertTrue(facts["生日"].pinned)
+        self.assertEqual(facts["事实4999"].value, "值4999")
 
 
 if __name__ == "__main__":
