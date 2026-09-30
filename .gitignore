@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+state/world_state.json
+.DS_Store

@@ -1,0 +1,456 @@
+{
+ "start_epoch": 1759130400,
+ "note": "StepRng(mulberry32) + advance_to 的验收向量；Python 与 ArkTS 必须同答案。",
+ "cases": [
+  {
+   "after_hours": 6,
+   "state": {
+    "engine_version": 1,
+    "hour_abs": 488653,
+    "tide_index": 1,
+    "phase": "盛明",
+    "phase_remaining_h": 14,
+    "last_moon_tide": -1000000000,
+    "reverse_until_h": -1,
+    "static_day": false,
+    "moon_tonight": false,
+    "wind_reverse": false,
+    "temp": 9.637232940000843,
+    "humidity": 0.6870029154633213,
+    "wind": 0.282871611024855,
+    "fog": false,
+    "rain": false,
+    "history": []
+   },
+   "render_block": "【她那边此刻】\n时节：萌芽期·溪醒月（第 1 年）\n当前：盛明（这一段还剩约 14 小时）\n光线：正亮，稳定，太阳高度高\n林中状态：林子最热闹的一段\n天气：潮气偏重；微风"
+  },
+  {
+   "after_hours": 30,
+   "state": {
+    "engine_version": 1,
+    "hour_abs": 488677,
+    "tide_index": 1,
+    "phase": "深暗",
+    "phase_remaining_h": 8,
+    "last_moon_tide": -1000000000,
+    "reverse_until_h": -1,
+    "static_day": false,
+    "moon_tonight": false,
+    "wind_reverse": false,
+    "temp": 9.285837172476427,
+    "humidity": 0.6477860061687926,
+    "wind": 0.15311839106011965,
+    "fog": false,
+    "rain": false,
+    "history": []
+   },
+   "render_block": "【她那边此刻】\n时节：萌芽期·溪醒月（第 1 年）\n当前：深暗（这一段还剩约 8 小时）\n光线：黑透，稳定，太阳高度无\n林中状态：林子换成另一种声音\n天气：潮气偏重；微风"
+  },
+  {
+   "after_hours": 400,
+   "state": {
+    "engine_version": 1,
+    "hour_abs": 489047,
+    "tide_index": 11,
+    "phase": "斜光",
+    "phase_remaining_h": 1,
+    "last_moon_tide": -1000000000,
+    "reverse_until_h": -1,
+    "static_day": false,
+    "moon_tonight": false,
+    "wind_reverse": false,
+    "temp": 9.757584209675876,
+    "humidity": 0.6431887496743891,
+    "wind": 0.4145601662251387,
+    "fog": false,
+    "rain": false,
+    "history": [
+     {
+      "tide": 1,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 8.7
+     },
+     {
+      "tide": 2,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 8.5
+     },
+     {
+      "tide": 3,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 7.5
+     },
+     {
+      "tide": 4,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 7.7
+     },
+     {
+      "tide": 5,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 9.8
+     },
+     {
+      "tide": 6,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 9.4
+     },
+     {
+      "tide": 7,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 9.6
+     },
+     {
+      "tide": 8,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 8.0
+     },
+     {
+      "tide": 9,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 4.6
+     },
+     {
+      "tide": 10,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 10.7
+     }
+    ]
+   },
+   "render_block": "【她那边此刻】\n时节：萌芽期·溪醒月（第 1 年）\n当前：斜光（这一段还剩约 1 小时）\n光线：正在明显变暗，太阳高度低\n林中状态：金色斜光，影子拉得很长\n天气：潮气偏重；风不小"
+  },
+  {
+   "after_hours": 2000,
+   "state": {
+    "engine_version": 1,
+    "hour_abs": 490647,
+    "tide_index": 55,
+    "phase": "盛明",
+    "phase_remaining_h": 9,
+    "last_moon_tide": 53,
+    "reverse_until_h": 490061,
+    "static_day": false,
+    "moon_tonight": false,
+    "wind_reverse": false,
+    "temp": 12.025888923411296,
+    "humidity": 0.6449990151832677,
+    "wind": 0.18424723413536087,
+    "fog": false,
+    "rain": false,
+    "history": [
+     {
+      "tide": 25,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 7.5
+     },
+     {
+      "tide": 26,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 9.4
+     },
+     {
+      "tide": 27,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 9.1
+     },
+     {
+      "tide": 28,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 8.0
+     },
+     {
+      "tide": 29,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 11.9
+     },
+     {
+      "tide": 30,
+      "season_month": "萌芽期·溪醒月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 9.9
+     },
+     {
+      "tide": 31,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 13.5
+     },
+     {
+      "tide": 32,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 15.4
+     },
+     {
+      "tide": 33,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 14.2
+     },
+     {
+      "tide": 34,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 12.0
+     },
+     {
+      "tide": 35,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 17.2
+     },
+     {
+      "tide": 36,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 12.7
+     },
+     {
+      "tide": 37,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": true,
+      "moon": false,
+      "temp": 10.4
+     },
+     {
+      "tide": 38,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 11.7
+     },
+     {
+      "tide": 39,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 10.5
+     },
+     {
+      "tide": 40,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 15.0
+     },
+     {
+      "tide": 41,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 15.1
+     },
+     {
+      "tide": 42,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 10.4
+     },
+     {
+      "tide": 43,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 14.8
+     },
+     {
+      "tide": 44,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 12.8
+     },
+     {
+      "tide": 45,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 13.6
+     },
+     {
+      "tide": 46,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 11.2
+     },
+     {
+      "tide": 47,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 13.7
+     },
+     {
+      "tide": 48,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 11.3
+     },
+     {
+      "tide": 49,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 7.9
+     },
+     {
+      "tide": 50,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 11.3
+     },
+     {
+      "tide": 51,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 12.2
+     },
+     {
+      "tide": 52,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 15.3
+     },
+     {
+      "tide": 53,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": true,
+      "temp": 15.0
+     },
+     {
+      "tide": 54,
+      "season_month": "萌芽期·抽芽月",
+      "fog": false,
+      "rain": false,
+      "static_day": false,
+      "moon": false,
+      "temp": 11.2
+     }
+    ]
+   },
+   "render_block": "【她那边此刻】\n时节：萌芽期·抽芽月（第 1 年）\n当前：盛明（这一段还剩约 9 小时）\n光线：正亮，稳定，太阳高度高\n林中状态：林子最热闹的一段\n天气：潮气偏重；微风"
+  }
+ ]
+}
