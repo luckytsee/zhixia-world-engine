@@ -75,7 +75,7 @@ class TestCalendar(unittest.TestCase):
         st["phase_remaining_h"] = 1
         hour_abs = 55555
         st["hour_abs"] = hour_abs
-        e.advance_to(st, (hour_abs + 2) * 3600)
+        e.advance_to(st, (hour_abs + 1) * 3600)   # 只推 1 小时：触发翻潮、不消耗新阶段
         self.assertEqual(st["tide_index"], 31)          # 已翻入抽芽月
         self.assertEqual(st["phase"], "初明")
         # 新阶段时长与"用新月参数直接采样"完全一致（同种子同输入 → 同结果）
