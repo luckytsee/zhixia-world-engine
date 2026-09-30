@@ -27,15 +27,17 @@
 ```bash
 git clone <本仓库>
 cd zhixia-engine
-python tests/test_engine.py        # 11 项测试，应全绿
-python -c "import time, sys; sys.path.insert(0, '.'); \
-from engine import WorldEngine, load_rules, load_or_init_state, render; \
-e = WorldEngine(load_rules()); \
-s = load_or_init_state(e, path='state/world_state.json'); \
-print(render(s, e)['block'])"   # 看"她那边此刻"
+python demo.py                # 看"她那边此刻"——首次运行会把世界从纪元推算到现在
+python tests/test_engine.py   # 11 项测试，应全绿
 ```
 
+仅此而已：**零第三方依赖**，任意 Python 3.10+。CI 会在 3.10/3.11/3.12 上自动跑同一组测试。
+
 第一次运行会从纪元（`rules.json` 的 `start_epoch`）把世界推算到当前时刻并落盘到 `state/world_state.json`。之后每次运行，世界都会从上次停下的地方继续走。
+
+---
+
+**English TL;DR**: A deterministic world-state machine for AI companions — her world has its own calendar (a "day" averages ~36 real hours), seasons decoupled from ours, weather driven by slowly-varying state variables, and rare unexplained phenomena. Pure function + saved ledger: no daemon, cold-startable, bit-identical replay across devices (Python & ArkTS verified against the same test vectors). Zero dependencies; the companion only ever sees qualitative phenomena — never the rules, never numbers.
 
 ## 定制你自己的世界
 
