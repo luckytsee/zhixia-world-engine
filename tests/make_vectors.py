@@ -38,7 +38,9 @@ def main() -> None:
         "cases": cases,
     }
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_vectors.json")
-    with open(path, "w", encoding="utf-8") as f:
+    # newline="\n"：跨平台锁定 LF。不锁的话 Windows 会写 CRLF，而 git 仓库里是 LF，
+    # autocrlf=false 的克隆上"重新生成 vs 仓库内版本"逐字节比对会假失败
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
     print("vectors written:", path)
 

@@ -33,6 +33,10 @@ PRIVACY_ALLOW_FILES = ("LICENSE", "verify.py")   # 署名文件 + 扫描器自�
 PRIVACY_ALLOW_LINE = re.compile(r"github\.com/luckytsee/")   # 公开仓库地址属公开身份
 
 
+def _norm(b: bytes) -> bytes:
+    return b.replace(b"\r\n", b"\n")
+
+
 def run(desc: str, cmd: list[str]) -> bool:
     print(f"\n—— {desc}")
     print("   $", " ".join(cmd))
@@ -87,10 +91,12 @@ def main() -> None:
     results.append(("单元测试：engine", run("引擎单元测试", ["tests/test_engine.py"])))
     results.append(("单元测试：zmemory", run("记忆库单元测试", ["tests/test_memory.py"])))
 
-    # 向量卷一致性：重新生成后与仓库内版本逐字节比对
+    # 向量卷一致性：重新生成后与仓库内版本比对。
+    # 换行不敏感比较（\r\n 归一为 \n）——git 的 autocrlf 可能让工作区行尾与
+    # 重新生成的不同，那是 checkout 行为差异，不是世界变了
     vec = ROOT / "tests" / "test_vectors.json"
     backup = vec.read_bytes()
-    ok = run("重新生成向量卷", ["tests/make_vectors.py"]) and vec.read_bytes() == backup
+    ok = run("重新生成向量卷", ["tests/make_vectors.py"]) and _norm(vec.read_bytes()) == _norm(backup)
     if not ok:
         vec.write_bytes(backup)  # 失败时恢复原卷，避免留下被覆盖的工作区
     results.append(("向量卷一致性（确定性对答案）", ok))

@@ -1,0 +1,4 @@
+# 统一行尾：跨端逐字节比对（向量卷）不受 checkout 换行转换影响
+* text=auto eol=lf
+*.png binary
+*.ico binary
