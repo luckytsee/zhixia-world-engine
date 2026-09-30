@@ -97,6 +97,8 @@ class CompanionMemory:
             raise ValueError("record_claim 的 key 和 value 都不能为空")
         now = time.time()
         old = self.get_fact(key)
+        if relation == "conflict" and old is None:
+            relation = "new"  # 没有旧认知就无从冲突，按新知处理
         with self._lock:
             if relation == "conflict":
                 base = f"{key}（后来"
