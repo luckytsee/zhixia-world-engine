@@ -1,7 +1,7 @@
 # Zhixia World Engine
 
 一个长期运行的 AI 伴侣的**记忆与关系系统**（决策层），外加配套的确定性世界引擎、礼物交换和
-桌面 UI 组件。Python 3.10+；`engine`/`gifts` 零第三方依赖，`memory` 需要 numpy（可选 sentence-transformers，用于语义检索）
+桌面 UI 组件。Python 3.10+。依赖分布：`engine` 与 `gifts` **零第三方依赖**（纯标准库）；`memory` 需要 **numpy**（可选 sentence-transformers 做语义检索）；`companion_ui` 的 tkinter 是标准库，但**截屏需要 Pillow、人脸闸门需要 opencv**（opencv 未装时仅感知功能不可用）
 
 ## 先说什么最值得看：决策层
 
