@@ -101,6 +101,8 @@ class WorldEngine:
             idx = self._stage_idx[state["phase"]]
             nxt = (idx + 1) % len(self._stages)
             if nxt == 0:  # 深暗走完 → 新的一潮
+                # 注意顺序：_close_tide 刻意传入"刚结束的旧月"（历史要记结束时的季节），
+                # 随后立即刷新为新潮的月份，供下一阶段的时长采样使用——不可对调。
                 self._close_tide(state, month)
                 month = self.month_of(state["tide_index"])
             state["phase"] = self._stages[nxt]["name"]
@@ -169,10 +171,10 @@ class WorldEngine:
 
 
 def load_or_init_state(engine: "WorldEngine", path: str | None = None,
-                       now: float | None = None) -> dict:
+                       now: float | None = None, log=print) -> dict:
     """权威账本的唯一入口：读盘 → 补算到此刻 → 写回（磁盘为数据源，可冷启动）。
 
-    存档缺失或 engine_version 不一致时，从纪元重新初始化（世界改版留痕见规格红线 5）。
+    存档缺失或 engine_version 不一致时，从纪元重新初始化（世界历史丢失，记日志留痕）。
     """
     p = path or _DEFAULT_STATE_PATH
     state = None
@@ -182,8 +184,13 @@ def load_or_init_state(engine: "WorldEngine", path: str | None = None,
                 cand = json.load(f)
             if cand.get("engine_version") == engine.VERSION:
                 state = cand
-        except (json.JSONDecodeError, OSError):
-            state = None  # 账本损坏 → 重建（世界历史丢，但不崩）
+            else:
+                log(f"[世界] 存档版本不兼容（文件 v{cand.get('engine_version')}，"
+                    f"引擎 v{engine.VERSION}），从纪元重建")
+        except (json.JSONDecodeError, OSError) as exc:
+            log(f"[世界] 存档损坏或无法读取（{exc}），从纪元重建")
+    else:
+        log(f"[世界] 无存档（{p}），从纪元初始化")
     if state is None:
         state = engine.initial_state()
     engine.advance_to(state, now if now is not None else time.time())

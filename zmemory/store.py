@@ -49,7 +49,7 @@ class CompanionMemory:
     """四层记忆。所有"改写"都要过 `record_claim`，并置/拒绝由这里强制。"""
 
     def __init__(self, path, log=print) -> None:
-        self._conn = sqlite3.connect(str(path), check_same_thread=False)
+        self._conn = sqlite3.connect(str(path), check_same_thread=False, timeout=5.0)
         self._lock = threading.RLock()
         with self._lock:
             self._conn.executescript(_SCHEMA)
@@ -93,6 +93,8 @@ class CompanionMemory:
         - pinned 事实在任何 relation 下都不改写值
         """
         key, value = key.strip(), value.strip()
+        if not key or not value:
+            raise ValueError("record_claim 的 key 和 value 都不能为空")
         now = time.time()
         old = self.get_fact(key)
         with self._lock:

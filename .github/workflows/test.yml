@@ -13,4 +13,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python tests/test_engine.py
+      - name: 引擎 + 记忆库测试
+        run: |
+          python tests/test_engine.py
+          python tests/test_memory.py
+      - name: 验收向量卷一致性（重新生成应与仓库内版本逐字节一致）
+        run: |
+          cp tests/test_vectors.json /tmp/vectors.expected.json
+          python tests/make_vectors.py
+          cmp tests/test_vectors.json /tmp/vectors.expected.json
