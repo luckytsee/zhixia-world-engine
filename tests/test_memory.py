@@ -21,7 +21,7 @@ def fresh(tmp: str) -> CompanionMemory:
 
 
 class TestImmutability(unittest.TestCase):
-    """⭐ 本模块的灵魂：她对你的认识是一部历史。"""
+    """验证 record_claim 的不可覆盖约束。"""
 
     def test_conflict_never_overwrites(self):
         tmp = tempfile.mkdtemp()
@@ -135,7 +135,7 @@ class TestPrompt(unittest.TestCase):
         self.assertIn("晚睡晚起", block)
         self.assertIn("我怕雾", block)
         self.assertIn("他寄了件衣服给我", block)
-        self.assertIn("不许不认", block)
+        self.assertIn("她自己记录的认知", block)
 
 
 if __name__ == "__main__":

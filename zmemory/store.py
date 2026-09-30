@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
-"""认知史存储（四层：facts / world_notes / episodes / session）。
+"""四层记忆库。核心约束在写入接口内部强制执行：
 
-⭐ 本模块的全部灵魂是一条**被代码强制的铁律**：
-  她对你的认识是一部历史，不是一张随时被 UPDATE 的表。
-  - 冲突**永不覆盖**旧值——新认知以 `key（后来）` 并置（`record_claim` 层面强制）；
-  - pinned 事实任何关系下都不改写；
-  - 世界笔记**只追加**，连删除接口都不存在（"不许不认"是机制不是提示词）；
-  - session 是易失的——"进入对话 ≠ 进入记忆"。
-
-零依赖：纯标准库 sqlite3。多线程安全（RLock）。
+  - facts 的冲突处理写在 record_claim() 里：旧条目不动，新值存为 "key（后来）"；
+  - pinned 事实在任何 relation 下都不改写值；
+  - world_notes 只提供追加接口，没有修改/删除方法；
+  - session 仅存在于内存，不写库。
 """
 from __future__ import annotations
 
@@ -88,13 +84,13 @@ class CompanionMemory:
 
     def record_claim(self, key: str, value: str, relation: str, *,
                      confidence: float = 0.9, note: str = "") -> dict:
-        """认知进入事实层的**唯一入口**。relation 来自 Judge（confirm/conflict/new）。
+        """写入事实的唯一入口，冲突处理在这里强制执行。
 
-        ⭐ 不可覆盖规则在这里强制：
-        - confirm      → 更新值（保留 first_learned，confidence 取 max）
-        - conflict     → 旧值原样不动，新认知存为 `key（后来）`（再撞就 `（后来2）`…）
-        - new          → 插入（若已存在则按 confirm 处理——Judge 判错也不至于覆盖历史）
-        - 任何情况下 pinned 事实的值都不改写（conflict 照常并置）
+        relation 由 Judge 给出（confirm/conflict/new）：
+        - confirm  → 更新值（保留 first_learned，confidence 取 max）
+        - conflict → 旧条目不动，新值存为 "key（后来）"（再冲突则 "key（后来2）"）
+        - new      → 插入；若 key 已存在则按 confirm 处理
+        - pinned 事实在任何 relation 下都不改写值
         """
         key, value = key.strip(), value.strip()
         now = time.time()
@@ -187,7 +183,7 @@ class CompanionMemory:
             lines += [f"- {f['key']}：{f['value']}" for f in facts]
         notes = self.all_world_notes()
         if notes:
-            lines.append("「你自己记下的事（必须记得，不许不认）」")
+            lines.append("「她自己记录的认知」")
             lines += [f"- {n['text']}" for n in notes]
         eps = self.recent_episodes(episode_limit)
         if eps:

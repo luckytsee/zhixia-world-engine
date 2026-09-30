@@ -7,10 +7,11 @@
 - new      全新信息   → 插入
 
 两个内置 Judge：
-- `exact_judge`   无 LLM 的兜底：精确/包含关系匹配（同义改写判不了，宁枉勿纵地判 conflict）
-- `make_llm_judge` 把任意 `llm(messages)->str` 包成 Judge（提示词就是知夏主项目那条的蒸馏版）
-  ⚠️ conflict **不等于谁错了**："通常12点睡"和"昨天3点睡"可以同时成立——
-  这就是为什么 conflict 的动作只有"并置"，连"忽略"都不给 Judge（宁多存一条，不丢一段历史）。
+- `exact_judge`    无 LLM 的兜底：精确匹配 + 子串判断，其余一律判 conflict
+- `make_llm_judge` 把任意 `llm(messages)->str` 包装成 Judge，LLM 调用失败时自动退回 exact_judge
+
+说明：conflict 的处理是"并置"而不是丢弃——语义相反但可以同时成立的表述
+（如"通常12点睡"和"昨天3点才睡"）两条都保留，由上层决定如何呈现。
 """
 from __future__ import annotations
 
