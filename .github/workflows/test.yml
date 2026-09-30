@@ -22,3 +22,5 @@ jobs:
           cp tests/test_vectors.json /tmp/vectors.expected.json
           python tests/make_vectors.py
           cmp tests/test_vectors.json /tmp/vectors.expected.json
+      - name: 隐私终检（每次 push 自动验证"没有泄露"）
+        run: python verify.py --privacy
