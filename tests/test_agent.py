@@ -82,5 +82,48 @@ class TestAttribution(unittest.TestCase):
         self.assertEqual(wn.notes, ["我喜欢下雨天"])   # 她自己的话正常落
 
 
+class TestLook(unittest.TestCase):
+    """看的能力：截屏 / 摄像头，缺了要如实说、不能装。"""
+
+    def _agent(self, vision):
+        return Agent(llm=None, persona_text="你是测试角色。", vision=vision,
+                     log=lambda *_: None)
+
+    def test_no_vision_says_so(self):
+        self.assertIn("看不到", self._agent(None).look("screen"))
+
+    def test_dict_form_works(self):
+        class LLM:
+            def vision_chat(self, system, prompt, image):
+                return "看到了。[happy]"
+
+        agent = Agent(llm=LLM(), persona_text="测试", vision={"screen": lambda: b"x"},
+                      log=lambda *_: None)
+        self.assertEqual(agent.look("screen"), "看到了。")   # 标签已剥
+
+    def test_object_form_works(self):
+        class LLM:
+            def vision_chat(self, system, prompt, image):
+                return "嗯。"
+
+        class V:
+            def camera(self):
+                return b"x"
+
+        agent = Agent(llm=LLM(), persona_text="测试", vision=V(), log=lambda *_: None)
+        self.assertEqual(agent.look("camera"), "嗯。")
+
+    def test_capture_failure_is_graceful(self):
+        def boom():
+            raise RuntimeError("没权限")
+
+        agent = self._agent({"screen": boom})
+        self.assertIn("没看清", agent.look("screen"))
+
+    def test_empty_capture_is_graceful(self):
+        agent = self._agent({"camera": lambda: None})
+        self.assertIn("没看清", agent.look("camera"))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

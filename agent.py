@@ -105,7 +105,8 @@ class Agent:
 
     def __init__(self, llm, persona_text: str, *,
                  memory=None, world_notes=None, affect=None, world=None,
-                 writer=None, search=None, session_turns: int = 20, log=print) -> None:
+                 writer=None, search=None, vision=None,
+                 session_turns: int = 20, log=print) -> None:
         self.llm = llm
         self.persona_text = persona_text
         self.memory = memory
@@ -116,6 +117,9 @@ class Agent:
         # 联网（可选，tools/web_search.py）。人格里承诺了"能自己查"，
         # 没接时她会照人格说"我可以查"——所以接上才算兑现。
         self.search = search
+        # 看（可选）：companion_ui/perception.py 的 grab_screen / capture_camera。
+        # 接上之后她会"看一眼你那边"——由上层决定何时触发（按钮 / 主动发起）。
+        self.vision = vision
         self.session_turns = int(session_turns)
         self.log = log
         self.session: list[dict[str, str]] = []
@@ -242,6 +246,43 @@ class Agent:
                 self.log(f"[认知] 她记下了：{item}")
             except Exception as exc:
                 self.log(f"[认知] 落库失败（标记仍会被剥掉）: {exc}")
+        return speech
+
+    # ---------- 看一眼（可选） ----------
+    def look(self, source: str = "screen", prompt: str = "") -> str:
+        """让她看一眼：source = "screen"（截屏）或 "camera"（摄像头）。
+
+        返回她的反应（正文，标签已剥）。没接看的能力时如实说——不装。
+        ⚠️ 两条纪律：
+          · 截屏要把**伴侣窗口自己涂黑**（否则她会看到自己）；
+          · 认人（是不是本人）交给上层判定，这里只负责"看图说话"。
+        """
+        # vision 可以是 dict（{"screen": fn, "camera": fn}）或提供同名方法的对象
+        grab = None
+        if self.vision is not None:
+            if isinstance(self.vision, dict):
+                grab = self.vision.get(source)
+            else:
+                grab = getattr(self.vision, source, None)
+        if not callable(grab):
+            return "……我这边看不到。"
+        try:
+            image = grab()
+        except Exception as exc:
+            self.log(f"[看] 取图失败（{source}）: {exc}")
+            return "……没看清。"
+        if not image:
+            return "……没看清。"
+        ask = prompt or "你看到了什么？用你的口吻说一两句，别解释你是怎么看到的。"
+        try:
+            raw = self.llm.vision_chat(self.persona_text[:500], ask, image)
+        except AttributeError:
+            self.log("[看] 当前 LLM 客户端没有 vision_chat，降级")
+            return "……我这会儿看不清。"
+        except Exception as exc:
+            self.log(f"[看] 识别失败: {exc}")
+            return "……没看清。"
+        speech, _emo, _rem = parse_reply(raw or "")
         return speech
 
     # ---------- 会话结束 ----------

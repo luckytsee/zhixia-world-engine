@@ -61,6 +61,19 @@ def build(api_key: str, base_url: str, model: str, data_dir: Path):
                 model=model, messages=messages,
                 temperature=0.7).choices[0].message.content or ""
 
+        def vision_chat(self, system: str, prompt: str, image_jpeg: bytes) -> str:
+            """看图说话（她"看一眼"时走这条）。用标准的多模态消息格式。"""
+            import base64
+            b64 = base64.b64encode(image_jpeg).decode()
+            return client.chat.completions.create(
+                model=model,
+                messages=[{"role": "system", "content": system},
+                          {"role": "user", "content": [
+                              {"type": "text", "text": prompt},
+                              {"type": "image_url",
+                               "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}]}],
+                temperature=0.7).choices[0].message.content or ""
+
     # 4) 提取管道（会话结束时用）
     writer = MemoryWriter(llm=LLM(), store=memory, log=print,
                           affect=affect, world_notes=world_notes)
@@ -73,9 +86,19 @@ def build(api_key: str, base_url: str, model: str, data_dir: Path):
     except Exception as exc:
         print(f"[联网] 未接入（{exc}）")
 
+    # 6) 看（可选：截屏 / 摄像头。人格里写了"她能看到你那边"，接上才算兑现）
+    vision = None
+    try:
+        from companion_ui import perception
+        vision = {"screen": perception.grab_screen,
+                  "camera": perception.capture_camera}
+    except Exception as exc:
+        print(f"[看] 未接入（{exc}）——截屏要 Pillow、摄像头要 opencv")
+
     agent = Agent(llm=LLM(), persona_text=PERSONA.read_text(encoding="utf-8"),
                   memory=memory, world_notes=world_notes, affect=affect,
-                  world=world, writer=writer, search=search, log=print)
+                  world=world, writer=writer, search=search, vision=vision,
+                  log=print)
     return agent
 
 
@@ -115,6 +138,19 @@ def main() -> None:
             print(f"联网：{'✓ 已接入' if o.ok else '✗ 查询失败'}（{o.backend} {o.elapsed_ms}ms）")
         except Exception as exc:
             print(f"联网：✗ 未接入（{exc}）")
+        # 看：截屏与摄像头各自独立（缺哪个只影响哪个）
+        try:
+            from companion_ui import perception
+            shot = perception.grab_screen(max_side=200)
+            print(f"截屏：✓ 可用（{len(shot)} 字节 JPEG）")
+        except Exception as exc:
+            print(f"截屏：✗ 不可用（{type(exc).__name__}: {exc}）")
+        try:
+            from companion_ui import perception
+            cam = perception.capture_camera()
+            print(f"摄像头：{'✓ 可用' if cam else '✗ 没取到画面（没插/被占用/无权限）'}")
+        except Exception as exc:
+            print(f"摄像头：✗ 不可用（{type(exc).__name__}: {exc}）")
         return
 
     if not args.key:
@@ -122,7 +158,7 @@ def main() -> None:
 
     agent = build(args.key, args.base_url, args.model, Path(args.data))
     print("=" * 46)
-    print("跟她说话（/end 结束并把这段写进长期记忆，/q 直接退出）")
+    print("跟她说话（/end 结束并写进长期记忆，/look 让她看一眼屏幕，/cam 看摄像头，/q 退出）")
     print("=" * 46)
     try:
         while True:
@@ -136,6 +172,12 @@ def main() -> None:
                 break
             if text in ("/end", "/exit"):
                 break
+            if text in ("/look", "/看"):
+                print(f"她 > {agent.look('screen')}")
+                continue
+            if text in ("/cam", "/摄像头"):
+                print(f"她 > {agent.look('camera')}")
+                continue
             reply = agent.chat(text)
             print(f"她 > {reply}")
     finally:
