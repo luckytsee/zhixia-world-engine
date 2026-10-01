@@ -94,12 +94,12 @@ def test_upsert_same_key_merges(store):
     )
     fact = store.upsert_fact(
         key="user.job",
-        value="在做桌面AI伴侣项目",
+        value="在做示例项目",
         confidence=0.9,
         evidence=[ep2.id],
         now=T0 + 100,
     )
-    assert fact.value == "在做桌面AI伴侣项目"
+    assert fact.value == "在做示例项目"
     assert fact.confidence == 0.9
     assert set(fact.evidence) == {ep1.id, ep2.id}
     assert fact.status == FACT_CONFIRMED

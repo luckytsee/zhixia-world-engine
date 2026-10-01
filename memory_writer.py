@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from memory.base import MemoryStore
     from memory.types import Fact
 
-_EXTRACTION_PROMPT = """你的任务：从一段"用户与桌面AI伴侣的对话记录"中提取长期记忆，输出严格的 JSON（不要 markdown 代码块，不要任何解释文字），格式：
+_EXTRACTION_PROMPT = """你的任务：从一段"用户与 AI 伴侣的对话记录"中提取长期记忆，输出严格的 JSON（不要 markdown 代码块，不要任何解释文字），格式：
 {{"episode": {{"summary": "一句话概括这次对话", "participants": ["用户"], "emotion": "整体情绪词或null", "topics": ["话题1", "话题2"], "importance": 0.3}}, "facts": [{{"key": "简短键名", "value": "具体内容", "confidence": 0.9}}], "affect": {{"comfort": 0, "closeness": 0, "note": ""}}, "gifts": [{{"name": "东西名", "note": "她的原话附言"}}], "reconciliations": [{{"relation": "conflict|confirm|new", "target": "user_fact|world_note", "existing": "她原来知道的", "new_information": "他刚说的", "action": "keep_both|ignore", "note": "一句话说明"}}]}}
 
 规则：
@@ -34,6 +34,10 @@ _EXTRACTION_PROMPT = """你的任务：从一段"用户与桌面AI伴侣的对�
   "原本计划""后来""接下来"这类不含绝对时间的说法（同上：提取时已经过了半小时）
 - importance：日常闲聊 0.1-0.3；涉及用户生活、习惯、人际关系、情绪 0.4-0.7；重大事件 0.8-1.0
 - facts 只记关于用户的稳定信息（喜好、习惯、计划、人际关系），一次性闲聊不记；没有就输出空数组
+- ⚠️⚠️ **归属判死**：facts 是"关于**对方**的"。**她自己的事绝不进 facts**——
+  她说"我怕雾""我住树根底下"，那是**她自己**的认知（由她写 `[记住:...]` 自行落库），
+  不是关于对方的。**真出过这个错**：她说了句"我怕雾"，被记成"用户怕雾"，
+  于是她的恐惧进了关于他的档案。判断口径只有一句：**主语是他还是她？**
 - ⚠️⚠️ facts 的 value **同样禁止钟点与相对日期**（"今天下午两点""昨天""刚才"）——
   facts 是**长期记忆**，会一直注入；写进去的时间会永久留在她认知里，明天再被当成"最近发生"。
   时间永远由系统的记录时间戳承担，**不需要也不允许你写**。要记时长就写时长（"开了两个半小时"）。
@@ -214,6 +218,11 @@ class MemoryWriter:
                 value = str(fact.get("value", "")).strip()
                 if not key or not value:
                     continue
+                # ⚠️⚠️ 归属守卫：她自己的事不许进"关于对方的事实"（确定性拦阻）
+                if _is_self_statement(key, value):
+                    self.log(f"[记忆] 拦下归属错误（她的自述不是关于他的事实）："
+                             f"{key} = {value}")
+                    continue
                 # ⚠️ 事实层时间词：只提醒不改写（见 _fact_has_time_hint 的说明）
                 if _fact_has_time_hint(value):
                     self.log(f"[记忆] ⚠️ 这条事实含时间表述，可能过期：{key} = {value}")
@@ -223,7 +232,7 @@ class MemoryWriter:
                         and confidence < old.confidence):
                     self.log(f"[记忆] 低置信提取未覆盖已有事实：{key}")
                     continue
-                # ⭐⭐ 认知比对（2026-09-28，用户定的"比对层"）：
+                # ⭐⭐ 认知比对（2026-09-28，设计定的"比对层"）：
                 # 提取器说这条跟已有认知**冲突**时，**不许覆盖旧值**——
                 # 用户口径："conflict 不等于谁错了"（"通常12点睡"和"昨天3点睡"可以同时成立），
                 # "她以前怎么认识你，本身也是你们相处历史的一部分"。
@@ -260,7 +269,7 @@ class MemoryWriter:
         gift_note = self._apply_gifts(data.get("gifts"))
         reconcile_note = ""
         if reconciliations:
-            # ⚠️ 冲突**留痕**（用户 2026-09-28 要的"能看见"）：
+            # ⚠️ 冲突**留痕**（设计定稿时要的"能看见"）：
             # 不写进日志你就不知道"她发现了矛盾"，也没法判断她记对没有。
             shown = "；".join(
                 f"{rc.get('relation')}: {rc.get('existing')} → {rc.get('new_information')}"
@@ -296,7 +305,7 @@ class MemoryWriter:
     def _apply_affect(self, payload: object) -> str:
         """把提取器给的 `affect` 字段应用到关系状态。返回日志后缀（空串=没影响）。
 
-        ⚠️ **看语境，不看词面**（用户 2026-09-28 定的关键）：
+        ⚠️ **看语境，不看词面**（设计定稿时定的关键）：
         他开玩笑式地损（"你咋这么笨哈哈"）**不扣**；认真说重话才扣。
         这个判断交给 LLM（提示词里已写明），本地那套只兜极端情况。
 
@@ -327,7 +336,7 @@ class MemoryWriter:
         **时点不同**——`chat.log` 每轮写，而 `reconciliations` 是**会话结束时**才产生的。
         硬塞进 DebugInfo 会导致"这轮的日志里没有它"。
 
-        ⚠️ 这是**你能发现她记错了**的唯一途径（用户 2026-09-28 要的）：
+        ⚠️ 这是**你能发现她记错了**的唯一途径（设计定稿时要的）：
         ```
         你 > 我其实挺喜欢吃面的
               📝 认知比对：饮食偏好「不太喜欢面食」→ 新「挺喜欢吃面的」
@@ -396,6 +405,36 @@ _TIME_HINT_RE = re.compile(
 def _fact_has_time_hint(value: str) -> bool:
     """事实里是否含钟点/相对日期（仅用于提醒，不做修改）。"""
     return bool(value and _TIME_HINT_RE.search(value))
+
+
+# ⚠️⚠️ 归属守卫（2026-10-01）：事实层是"关于**对方**的"，她自己的事不许进来。
+# 实测复现（5 次里 4 次）：用户说"我怕雾这事你记一下"，她接话"嗯？好"——
+# 提取器把她的话记成了 `怕雾 = 用户怕雾`，**她的恐惧进了他的档案**。
+# 只靠提示词不够（同一段对话经常被判错），所以这里做确定性拦阻。
+_SELF_SUBJECT_RE = re.compile(
+    r"^(我|我的|我自己|我这儿|我这里)[^，。；]*"          # 值本身以"我"开头
+    r"|用户(怕|喜欢|住|讨厌|不喜|习惯)|对方(怕|喜欢|住|讨厌)"  # 明文把她的自述安到他头上
+    r"|(我|她)(怕|喜欢|住|讨厌)")
+
+
+def _is_self_statement(key: str, value: str) -> bool:
+    """这条事实是不是把"她的自述"记成了"关于对方的事"。
+
+    判据保守（宁可漏拦也不误杀关于对方的正当事实）：
+      · 值以"我…"开头 → 是她的自述；
+      · 值里出现"用户怕/喜欢/住/讨厌"这类把她的说法安到他头上的措辞 → 是误记。
+    """
+    v = (value or "").strip()
+    if not v:
+        return False
+    if re.match(r"^(我|我的|我自己|我这儿|我这里)", v):
+        return True
+    if re.search(r"(用户|对方)\s*(怕|喜欢|爱|住|讨厌|不喜欢|习惯)", v):
+        return True
+    # 键名是她的属性 + 值里没有"他/用户"作主语 → 判为误记
+    if re.search(r"(怕|恐惧|住处|住在)", key) and not re.search(r"(他|用户|对方)", v):
+        return True
+    return False
 
 
 def _clamp(value: float, low: float, high: float) -> float:

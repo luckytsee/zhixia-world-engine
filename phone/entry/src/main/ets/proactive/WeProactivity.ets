@@ -17,7 +17,7 @@ const ZX_LOG_DOMAIN: number = 0x0926;
 const ZX_LOG_TAG: string = 'WeProactive';
 
 /**
- * 每日上限。任务书 §8.2 原写"每天目标 2–4 次"，2026-09-29 用户拍板调高到 8
+ * 每日上限。任务书 §8.2 原写"每天目标 2–4 次"，后来调高到 8
  * （先调高试跑，真实由头密度本来就低，节流器主要是防异常刷屏）。
  */
 export const ZX_PROACTIVE_MAX_PER_DAY: number = 8;

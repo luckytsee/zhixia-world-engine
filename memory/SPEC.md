@@ -1,7 +1,7 @@
 # memory 模块实现规格（SPEC）
 
 > 本文件是实现契约。`types.py` 与 `base.py` 已定死，**不得修改**；你实现 `store.py`（SQLite 存储）、`retrieval.py`（混合检索）、`decay.py`（遗忘）、`embedding.py`（本地向量化）以及 `tests/`。
-> 设计依据：`D:\桌面\桌面AI伴侣_计划\docs\06_记忆系统设计.md`（可读，不可改）。
+> 设计依据：`../docs/02_记忆系统设计.md`（可读，不可改）。
 
 ## 1. 硬约束
 
@@ -10,7 +10,7 @@
 3. **同步 API**：所有方法为普通同步函数（调用方自行放线程），不用 async。
 4. **不引入需要编译的工具链**：向量检索用 **numpy 暴力余弦**（几百条数据毫秒级），不用 faiss / sqlite-vec。
 5. embedding 模型：`sentence-transformers` 的 `paraphrase-multilingual-MiniLM-L12-v2`（本机已装 sentence-transformers 5.5.1，走全局 site-packages）。**embedder 必须可注入**：构造函数接受可选 `embedder` 参数（协议：`def embed(texts: list[str]) -> list[list[float]]`），测试时用 MockEmbedder，**测试不得下载模型、不得联网**。
-6. HF 缓存：首次加载模型前设置 `HUGGINGFACE_HUB_CACHE=D:\models\hf`（存在则用，不存在则创建）。
+6. HF 缓存：首次加载模型前设置 `HUGGINGFACE_HUB_CACHE=本地 HF 缓存目录（用 HUGGINGFACE_HUB_CACHE 指定）`（存在则用，不存在则创建）。
 7. Python 3.12，类型注解齐全，通过 `mypy --strict` 不做硬性要求，但 `pyright basic` 应无错。
 
 ## 2. SQLite schema（`data/memory.db`，WAL 模式，路径可由构造参数覆盖）
@@ -119,7 +119,7 @@ class SQLiteMemoryStore:  # 实现 MemoryStore 协议
 ## 6. 验收命令
 
 ```powershell
-cd D:\桌面\桌面AI伴侣_计划\desktop-ai-companion
+cd <仓库根>
 python -m pytest memory/tests/ -v          # 全绿
 python -c "from memory import SQLiteMemoryStore; print('import ok')"
 ```

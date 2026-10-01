@@ -17,7 +17,7 @@ from world_notes import WorldNotesStore, looks_like_appearance  # noqa: E402
 from memory import SQLiteMemoryStore  # noqa: E402
 from memory_writer import MemoryWriter  # noqa: E402
 from gifts import GiftStore  # noqa: E402
-from memory_writer import _fact_has_time_hint  # noqa: E402
+from memory_writer import _fact_has_time_hint, _is_self_statement  # noqa: E402
 
 
 def make_world_notes(tmp: str) -> WorldNotesStore:
@@ -146,6 +146,42 @@ class TestFactTimeHint(unittest.TestCase):
         self.assertTrue(_fact_has_time_hint("他平时晚上十点打游戏"))   # 提示，但不改写
         self.assertFalse(_fact_has_time_hint("他喜欢喝咖啡"))
         self.assertFalse(_fact_has_time_hint("开了两个半小时的会"))     # 时长不是时间点
+
+
+class TestFactAttribution(unittest.TestCase):
+    """归属守卫：她自己的事不许进"关于对方的事实"。
+
+    实测背景（2026-10-01）：用户说"我怕雾这事你记一下"、她回"嗯？好"，
+    提取器把她的话记成 `怕雾 = 用户怕雾`——**她的恐惧进了他的档案**，
+    5 次复现 4 次。提示词改了不够，加了确定性拦阻。
+    """
+
+    def test_self_statements_blocked(self):
+        self.assertTrue(_is_self_statement("怕雾", "用户怕雾"))
+        self.assertTrue(_is_self_statement("怕雾", "怕雾"))
+        self.assertTrue(_is_self_statement("住处", "我住树根底下"))
+
+    def test_facts_about_him_pass(self):
+        self.assertFalse(_is_self_statement("作息", "他晚上十点打游戏"))
+        self.assertFalse(_is_self_statement("饮食", "他不太爱吃面"))
+        self.assertFalse(_is_self_statement("妹妹", "他有个九岁的妹妹"))
+
+    def test_blocked_in_pipeline(self):
+        """走完整管道：她的自述不会落进事实层。"""
+        tmp = tempfile.mkdtemp()
+        store = SQLiteMemoryStore(os.path.join(tmp, "m.db"))
+        wn = WorldNotesStore(os.path.join(tmp, "w.db"))
+        writer = MemoryWriter(llm=None, store=store, log=lambda *_: None, world_notes=wn)
+        writer.llm = type("L", (), {"chat": lambda s, m: json.dumps({
+            "episode": {"summary": "聊到害怕的事", "importance": 0.3},
+            "facts": [{"key": "怕雾", "value": "用户怕雾", "confidence": 0.9},
+                      {"key": "作息", "value": "他晚上十点打游戏", "confidence": 0.9}],
+            "reconciliations": []}, ensure_ascii=False)})()
+        writer.write_session([{"role": "user", "content": "我怕雾这事你记一下"},
+                              {"role": "assistant", "content": "嗯？好。"}])
+        keys = {f.key for f in store.list_facts()}
+        self.assertNotIn("怕雾", keys)        # 拦下
+        self.assertIn("作息", keys)           # 关于他的照常写
 
 
 if __name__ == "__main__":

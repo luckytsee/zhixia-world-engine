@@ -111,14 +111,14 @@ def test_capacity_not_triggered_under_limit(store_factory):
 def test_export_all_sections(store, db_path):
     ep = _add(store, summary="用户聊了项目进度", topics=["项目"], importance=0.8, now=T0)
     store.upsert_fact(
-        key="user.project", value="桌面AI伴侣", confidence=0.9, evidence=[ep.id], now=T0
+        key="user.project", value="示例项目", confidence=0.9, evidence=[ep.id], now=T0
     )
     store.forget_fact  # noqa: B018  (仅确认方法存在)
 
     text = store.export_all()
     assert "=== FACTS ===" in text
     assert "=== EPISODES ===" in text
-    assert "[user.project] 桌面AI伴侣" in text
+    assert "[user.project] 示例项目" in text
     assert "confirmed" in text
     assert "用户聊了项目进度" in text
     assert "topics: 项目" in text

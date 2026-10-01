@@ -11,7 +11,7 @@
 | `store.py` | `SQLiteMemoryStore`：12 个协议方法的 SQLite 实现，内部 RLock 保证线程安全 |
 | `retrieval.py` | 混合评分：tokenize（中文 2-gram / 英文白空切词）、余弦、新近度、关键词命中、情境加成 |
 | `decay.py` | 时间衰减归档（recency < 0.05）+ 容量淘汰（importance × recency 最低者，pinned 豁免） |
-| `embedding.py` | 本地 sentence-transformers 懒加载，HF 缓存指向 `D:\models\hf`，禁止云 API |
+| `embedding.py` | 本地 sentence-transformers 懒加载，HF 缓存指向 `本地 HF 缓存目录（用 HUGGINGFACE_HUB_CACHE 指定）`，禁止云 API |
 | `tests/` | 26 个用例，MockEmbedder（确定性字符袋向量）全离线，覆盖 SPEC 第 5 节全部 7 项 |
 
 ## 2. 实现要点
