@@ -74,6 +74,47 @@ def run_one(scale: int, embedder) -> dict:
             "search_ms": round(search_ms)}
 
 
+SEMANTIC_CASES = [
+    ("用户提到他有一把祖传的铜钥匙吊坠",
+     ["挂坠那个事", "钥匙那玩意儿", "他那个吊坠", "祖传的东西"]),
+    ("用户说他养了一只叫团子的橘猫",
+     ["我家猫", "那只橘色的", "团子"]),
+    ("用户提到他下周要去南京出差三天",
+     ["出差那事", "去外地", "南京"]),
+]
+
+
+def run_semantic(embedder, background: int = 800) -> list[dict]:
+    """语义漂移测试：**换了说法**能不能找到同一件事（这才是记忆有效性的判据）。
+
+    ⚠️ 与"大海捞针"的区别：捞针用原文查原文（靠子串就能过），
+    这里用口语简称/指代去查（"钥匙那玩意儿"→"祖传的铜钥匙吊坠"），
+    只有语义检索真有效才能全中。
+    """
+    from memory import SQLiteMemoryStore
+
+    tmp = tempfile.mkdtemp(prefix="zhixia_sem_")
+    store = SQLiteMemoryStore(os.path.join(tmp, "m.db"), embedder=embedder)
+    print(f"  （灌 {background} 条背景噪声…）", flush=True)
+    for i in range(background):
+        store.add_episode(summary=NOISE.format(i=i) + "，说了些工作和生活上的安排",
+                          participants=["用户"], emotion=None, topics=["日常"],
+                          importance=0.2)
+    for text, _ in SEMANTIC_CASES:
+        store.add_episode(summary=text, participants=["用户"], emotion=None,
+                          topics=["物品"], importance=0.8)
+
+    out = []
+    for text, queries in SEMANTIC_CASES:
+        key = text[6:12]
+        for q in queries:
+            res = store.search_episodes(query_text=q, top_k=5)
+            hit = any(key in r.episode.summary for r in res)
+            top1 = bool(res) and key in res[0].episode.summary
+            out.append({"needle": text, "query": q, "hit": hit, "top1": top1})
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="检索容量测试")
     ap.add_argument("--scales", default="200,2000,8000",
@@ -81,12 +122,30 @@ def main() -> None:
     ap.add_argument("--quick", action="store_true", help="只跑 200,1000")
     ap.add_argument("--hash-embed", action="store_true",
                     help="用假向量（秒级，仅供机制排查）")
+    ap.add_argument("--semantic", action="store_true",
+                    help="跑语义漂移测试（换说法的查询能否命中）")
     args = ap.parse_args()
 
     scales = [200, 1000] if args.quick else [int(x) for x in args.scales.split(",")]
     embedder = HashEmbedder() if args.hash_embed else None
     mode = "假向量（机制排查用）" if args.hash_embed else "真实语义模型"
     print(f"检索容量测试 · 规模 {scales} · {mode}\n")
+
+    if args.semantic:
+        print("语义漂移测试：用换了说法的查询去捞同一件事")
+        print()
+        rows = run_semantic(embedder)
+        hitn = sum(1 for r in rows if r["hit"])
+        top1n = sum(1 for r in rows if r["top1"])
+        for r in rows:
+            print(f"  {'✓' if r['hit'] else '✗'} "
+                  f"{r['query']:<14} → {r['needle'][:26]}"
+                  f"{'  (第 1 位)' if r['top1'] else ''}")
+        print()
+        print(f"命中 {hitn}/{len(rows)}，其中排第 1 位 {top1n}/{len(rows)}")
+        print("判据：这不是'检索没崩'，而是'不同的词能不能找到同一件事'——"
+              "记忆系统有效性的真正判据。")
+        return
 
     results = []
     for s in scales:
