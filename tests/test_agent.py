@@ -125,5 +125,21 @@ class TestLook(unittest.TestCase):
         self.assertIn("没看清", agent.look("camera"))
 
 
+class TestQuoteBack(unittest.TestCase):
+    """对方转述她的话、她确认 → 是她的认知，不许丢（2026-10-01 补的场景）。"""
+
+    def test_quote_back_is_hers(self):
+        self.assertTrue(is_her_own("我喜欢下雨天", "你刚才不是说你喜欢下雨天吗"))
+
+    def test_quote_back_with_existing_note(self):
+        """她的认知已在库中 → 重申归属是她的（上层会按已有不重复落）。"""
+        self.assertTrue(is_her_own("我怕雾", "我怕雾这事你记一下",
+                                   existing_note_texts=["我怕雾"]))
+
+    def test_attribution_still_blocks_pollution(self):
+        """旧场景不回归：对方真的在说他自己的事 → 仍然不算她的。"""
+        self.assertFalse(is_her_own("我怕雾", "我怕雾这事你记一下"))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

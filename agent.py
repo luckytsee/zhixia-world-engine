@@ -57,7 +57,19 @@ def _strip_tags(text: str) -> str:
     return _TRAILING_TAG_RE.sub("", text).strip()
 
 
-def is_her_own(text: str, recent_user_text: str) -> bool:
+def _overlap_ratio(text: str, reference: str) -> float:
+    """text 的 2-gram 有多少出现在 reference 里（0~1）。"""
+    item = (text or "").strip()
+    ref = reference or ""
+    grams = {item[i:i + 2] for i in range(len(item) - 1)}
+    if not grams:
+        return 0.0
+    return sum(1 for g in grams if g in ref) / len(grams)
+
+
+def is_her_own(text: str, recent_user_text: str,
+               prior_her_text: str = "",
+               existing_note_texts: list[str] | None = None) -> bool:
     """这条"要记住"的内容，是**她自己的**，还是在复述对方刚说的话？
 
     ⚠️ 为什么需要（2026-10-01 实测）：
@@ -66,22 +78,33 @@ def is_her_own(text: str, recent_user_text: str) -> bool:
       认知层是她的人格地基，被对方的话污染后，她会真以为自己怕雾
       （而设计上她的喜好恐惧"应该长出来，不是写死的"）。
 
-    判据（保守：拿不准就当"不是她的"，宁可不记也不污染）：
-      · 内容里的实词在对方最近说的话里出现过 → 判为复述，不落；
-      · 内容以"我"开头、且对方的话里**没有**对应内容 → 是她自己的，落。
+    判定顺序（2026-10-01 补第三种场景——对方转述**她说过的话**）：
+      ① 与她已有的认知重合 → 是她在重申自己的事（归她；上层按"已有则不重复落"处理）；
+      ② 对方的话在**转述她**（"你刚才不是说…""你说过…"）→ 源头是她，归她；
+      ③ 与她本段对话说过的话重合 → 她的原话，归她；
+      ④ 默认：与对方最近的话高度重合 → 判为复述对方（保守：宁可不记也不污染）。
     """
     item = (text or "").strip()
     if not item:
         return False
-    if not recent_user_text:
-        return True                       # 没有对方的话可比 → 视为她自己说的
-    # 取内容里的实词（2 字以上），看是否大量出现在对方的话里
-    grams = {item[i:i + 2] for i in range(len(item) - 1)}
-    if not grams:
+
+    # ① 她已有的认知里有这条 → 她在重申自己的事
+    for note in (existing_note_texts or []):
+        if _overlap_ratio(item, note) >= 0.5:
+            return True
+
+    # ② 对方在转述她说过的话
+    if recent_user_text and re.search(r"你(刚才)?不是?说|你说过", recent_user_text):
         return True
-    hit = sum(1 for g in grams if g in recent_user_text)
-    if hit / len(grams) >= 0.5:           # 一半以上重合 → 判为复述
+
+    # ③ 与她本段对话说过的话重合
+    if prior_her_text and _overlap_ratio(item, prior_her_text) >= 0.5:
+        return True
+
+    # ④ 默认：与对方最近的话高度重合 → 判为复述对方
+    if recent_user_text and _overlap_ratio(item, recent_user_text) >= 0.5:
         return False
+    return True
     return True
 
 
@@ -235,11 +258,25 @@ class Agent:
         # 她说"要记住"的 → 落进她自己的认知层
         # ⚠️ 落之前先判归属：如果这条其实是**对方说的**（她在复述），不能进她的认知层
         #    （否则对方的一句"我怕雾"，会变成她自己的恐惧——实测踩到过）
+        prior_her = " ".join(m["content"] for m in self.session
+                             if m["role"] == "assistant")
+        note_texts = []
+        if self.world_notes is not None:
+            try:
+                note_texts = [n.text for n in self.world_notes.all()]
+            except Exception:
+                note_texts = []
         for item in remember:
             if self.world_notes is None:
                 continue
-            if not is_her_own(item, user_text):
+            if not is_her_own(item, user_text,
+                              prior_her_text=prior_her,
+                              existing_note_texts=note_texts):
                 self.log(f"[认知] 这条是对方说的，不记成她自己的认知：{item}")
+                continue
+            # 与已有认知重合 → 是她在重申（不重复落库，认知本来就在）
+            if any(_overlap_ratio(item, n) >= 0.5 for n in note_texts):
+                self.log(f"[认知] 她重申了自己的认知（已在库中）：{item}")
                 continue
             try:
                 self.world_notes.add(item)
