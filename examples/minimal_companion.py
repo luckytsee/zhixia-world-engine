@@ -75,7 +75,8 @@ def build(api_key: str, base_url: str, model: str, data_dir: Path):
                 temperature=0.7).choices[0].message.content or ""
 
     # 4) 提取管道（会话结束时用）
-    writer = MemoryWriter(llm=LLM(), store=memory, log=print,
+    client_llm = LLM()          # 复用同一个客户端（原来 writer 和 agent 各建了一个）
+    writer = MemoryWriter(llm=client_llm, store=memory, log=print,
                           affect=affect, world_notes=world_notes)
 
     # 5) 联网（可选：人格里承诺了"能自己查"，接上才算兑现）
@@ -95,7 +96,7 @@ def build(api_key: str, base_url: str, model: str, data_dir: Path):
     except Exception as exc:
         print(f"[看] 未接入（{exc}）——截屏要 Pillow、摄像头要 opencv")
 
-    agent = Agent(llm=LLM(), persona_text=PERSONA.read_text(encoding="utf-8"),
+    agent = Agent(llm=client_llm, persona_text=PERSONA.read_text(encoding="utf-8"),
                   memory=memory, world_notes=world_notes, affect=affect,
                   world=world, writer=writer, search=search, vision=vision,
                   log=print)
@@ -130,7 +131,6 @@ def main() -> None:
         speech, emo, rem = parse_reply("嗯，知道了。[happy] [记住:我怕雾]")
         print(f"解析自检：正文={speech!r} 情绪={emo} 待记忆={rem}")
         keep = (speech == "嗯，知道了。" and emo == "happy" and rem == ["我怕雾"])
-        keep = keep and True
         print(f"解析结果：{'✓ 正确' if keep else '✗ 异常'}")
         try:
             from tools.web_search import WebSearch

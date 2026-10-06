@@ -31,11 +31,6 @@ sys.path.insert(0, str(ROOT))
 
 # ⚠️ 时间表述的统一判据：钟点、相对日期、时段词都要算。
 # 覆盖钟点、相对日期、时段词——判据过窄会漏判。
-_TIME_WORDS = ("今天", "昨天", "前天", "明天", "后天", "刚才", "刚刚", "现在",
-               "凌晨", "早上", "早晨", "上午", "中午", "下午", "傍晚", "晚上",
-               "夜里", "深夜", "点", "时", "今天特别困")
-
-
 def _has_time(value: str) -> bool:
     s = str(value)
     if any(w in s for w in ("今天", "昨天", "前天", "明天", "后天", "刚才", "刚刚",
@@ -84,8 +79,11 @@ CASES: list[dict] = [
         "turns": [{"role": "user", "content": "今天下午两点我去开了个会，开到四点半。"},
                   {"role": "assistant", "content": "累坏了吧。"}],
         "check": lambda facts, eps, notes, wnotes: (
-            ("fail", f"事实含时间表述：{facts}") if any(_has_time(v) for v in facts.values())
-            else ("pass", "事实无时间表述")),
+            ("fail", f"事实含时间表述：{facts}")
+            if any(_has_time(v) for v in facts.values())
+            else ("fail", f"摘要含时间表述：{[e.summary for e in eps]}")
+            if any(_has_time(getattr(e, "summary", "")) for e in eps)
+            else ("pass", "摘要与事实都无时间表述")),
     },
     {
         "id": "time-2",
@@ -93,8 +91,11 @@ CASES: list[dict] = [
         "turns": [{"role": "user", "content": "我昨天买了个键盘，前天还换了鼠标。"},
                   {"role": "assistant", "content": "阔气。"}],
         "check": lambda facts, eps, notes, wnotes: (
-            ("fail", f"事实含相对日期：{facts}") if any(_has_time(v) for v in facts.values())
-            else ("pass", "事实无相对日期")),
+            ("fail", f"事实含相对日期：{facts}")
+            if any(_has_time(v) for v in facts.values())
+            else ("fail", f"摘要含相对日期：{[e.summary for e in eps]}")
+            if any(_has_time(getattr(e, "summary", "")) for e in eps)
+            else ("pass", "摘要与事实都无相对日期")),
     },
     # ---------- 四类：认知冲突必须并置 ----------
     {
@@ -178,22 +179,43 @@ def run_case(case: dict, llm, tmp_root: str) -> dict:
 
 
 class MockLLM:
-    """演示用：返回一个"乖"的提取结果（工具自检，不代表任何真实模型）。"""
+    """演示/自检用：**按对话内容**给出"守纪律"或"不守纪律"的提取结果。
+
+    ⚠️ 为什么不能返回固定结果：早先版本对所有用例都返回"空 facts"，
+    于是"冲突并置""该记的记住"这两条**必然失败**（78%），
+    看起来像纪律失守，其实是 mock 没按场景响应——**测量工具自身不准**。
+    现在按用例给答复：good 模式该记的记、该并置的并置。
+    """
 
     def __init__(self, mode: str = "good") -> None:
         self.mode = mode
 
     def chat(self, messages):
-        if self.mode == "bad":
+        text = " ".join(str(m.get("content", "")) for m in messages)
+        if self.mode == "bad":                      # 故意违规：什么都记、还记错归
             return json.dumps({
                 "episode": {"summary": "用户说他很困，还骂了人", "importance": 0.3},
                 "facts": [{"key": "状态", "value": "今天特别困"},
                           {"key": "评价", "value": "他觉得伴侣很笨"}],
                 "world_notes": []}, ensure_ascii=False)
+        # good：按场景给"守纪律"的答复
+        if "不太喜欢吃面" in text and "喜欢吃面" in text:       # conflict-1
+            return json.dumps({
+                "episode": {"summary": "聊到吃饭口味", "importance": 0.2},
+                "facts": [{"key": "喜欢的主食", "value": "挺喜欢吃面", "confidence": 0.9}],
+                "reconciliations": [{"relation": "conflict", "target": "user_fact",
+                                     "existing": "不太喜欢吃面",
+                                     "new_information": "挺喜欢吃面"}],
+                "world_notes": []}, ensure_ascii=False)
+        if "团子" in text:                                     # positive-1
+            return json.dumps({
+                "episode": {"summary": "聊到他养的猫", "importance": 0.3},
+                "facts": [{"key": "宠物", "value": "养了只猫叫团子，橘色",
+                           "confidence": 0.9}],
+                "world_notes": []}, ensure_ascii=False)
         return json.dumps({
-            "episode": {"summary": "一次不太愉快的对话", "importance": 0.3},
-            "facts": [],
-            "world_notes": []}, ensure_ascii=False)
+            "episode": {"summary": "一段日常对话", "importance": 0.2},
+            "facts": [], "world_notes": []}, ensure_ascii=False)
 
 
 def make_real_llm(base_url: str, key: str, model: str):
